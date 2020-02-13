@@ -1,1 +1,1 @@
-This script is to download all of a user's images from their VSCO.co page. However, since VSCO had included JavaScript elements (mainly a Load More Button), this script is not completely functional. This script will only download the first few images until a fix is implemented.
+This script is to download all of a user's images from their VSCO.co page. However, the script will not download all images until I get around into fixing it.
