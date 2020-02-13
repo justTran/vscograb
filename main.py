@@ -1,15 +1,17 @@
-from bs4 import BeautifulSoup
-import requests, progressbar
-import urllib, urllib2, os, time
+import requests, progressbar, urllib, os, time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys
+from urllib.request import urlopen
 
 pbar = None
-queue = []
-done = []
-shouldContinue = True
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument('--ignore-certificate-errors')
+chrome_options.add_argument('--incognito')
 
 def progress(block_num, block_size, total_size):
     global pbar
-
     if pbar is None:
         pbar = progressbar.ProgressBar(maxval = total_size)
         pbar.start()
@@ -22,57 +24,68 @@ def progress(block_num, block_size, total_size):
         pbar.finish()
         pbar = None
 
-print ('Enter the vsco.co usernames and type stop to end the queue\n')
+def setDirectory(newFolder):
+    if not os.path.exists(os.getcwd() + '//' + newFolder):
+        try:
+            print("Making a new path...")
+            dir_name = os.makedirs(os.getcwd() + '//' + newFolder)
+        except:
+            pass
 
-while(shouldContinue):
-    accName = raw_input()
+    dir_name = os.getcwd() + '//' + newFolder
+    return dir_name
 
-    if accName == 'stop':
-        shouldContinue = False
-        break
+def getImages(image_list, dir_name):
+    count = 0
+    for image in image_list:
+        print("Downloading " + image.get_attribute('src')[:-6])
+        urllib.request.urlretrieve(image.get_attribute('src')[:-6], os.path.join(dir_name, str(count) + ".jpg"), progress)
+        count += 1
 
-    else:
-        queue.append(accName)
+def startDriver(user):
+    driver = webdriver.Chrome(options = chrome_options, executable_path = os.getcwd() + '/chromedriver')
+    driver.get("https://vsco.co/" + user + "/images")
+    dir = setDirectory(user)
+    try:
+        button = driver.find_element_by_xpath("//html/body/div/div/main/div/div[5]/section/div[2]/button")
+        time.sleep(4)
+        button.click()
+    except:
+        pass
 
-if not queue:
-    pass
+    print("Loading the page, this may take a moment....")
+    lenOfPage = driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
+    hasReachedEnd = False
+    while(hasReachedEnd == False):
+        currentPageIndex = lenOfPage
+        time.sleep(3)
+        lenOfPage = driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
+        if currentPageIndex == lenOfPage:
+            hasReachedEnd = True
+            image_list = driver.find_elements_by_tag_name('img')
+            getImages(image_list, dir)
+            driver.close()
 
-else:
+def main():
+    dir_name = None
+    shouldContinue = True
+    queue = []
+    print ('Enter the vsco.co usernames and type // to end the queue\n')
+    while(shouldContinue):
+        accName = input()
+
+        if accName == '//':
+            shouldContinue = False
+            break
+
+        else:
+            queue.append(accName)
+
+    if not queue:
+        pass
+    
     for n in range(0, len(queue)):
-        count = 1
-        index = 1
-        if not os.path.exists(queue[n]):
-            try:
-                print("making a new path")
-                dir_name = os.makedirs(os.getcwd() + '//' + queue[n])
-            except:
-                pass
+        startDriver(queue[n])
 
-        dir_name = os.getcwd() + '//' + queue[n]
-
-        while(True):
-            if (len(done) > 0):
-                del done[:]
-
-            url = "https://vsco.co/" + queue[n] + "/images/" + str(index)
-            page = urllib2.urlopen(url)
-            soup = BeautifulSoup(page, 'html.parser')
-            if soup.title.string == "VSCO - Create, discover, and connect":
-                break
-
-            print ("page" + str(index))
-            index += 1
-            source = soup.find_all('script')[2]
-
-            for line in source.prettify().split("responsiveUrl")[1:-1]:
-                img = line.split(',"showLocation"')[0]
-                if img.find("im.vsco.co"):
-                    if img[3:img.rfind('"')] not in done:
-                        done.append(img[3:img.rfind('"')])
-                        print("Downloading https://" + str(img[3:img.rfind('"')]))
-                        urllib.urlretrieve("https://" + img[3:img.rfind('"')], os.path.join(dir_name, str(count) + ".jpg"), progress)
-                        count += 1
-                    else:
-                        pass
-
-print ('downloads complete')
+main()
+print("Finished downloading images.")
