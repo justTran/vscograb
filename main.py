@@ -43,7 +43,8 @@ def getImages(image_list, dir_name):
         count += 1
 
 def startDriver(user):
-    driver = webdriver.Chrome(options = chrome_options, executable_path = os.getcwd() + '/chromedriver')
+    hasSeen = []
+    driver = webdriver.Chrome(options = chrome_options, executable_path = os.getcwd() + '/chromedriver.exe')
     driver.get("https://vsco.co/" + user + "/images")
     dir = setDirectory(user)
     try:
@@ -54,16 +55,34 @@ def startDriver(user):
         pass
 
     print("Loading the page, this may take a moment....")
+
+    try:
+        if (len(hasSeen) > 0):
+            del hasSeen[:]
+    except:
+        pass
+
     lenOfPage = driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
     hasReachedEnd = False
     while(hasReachedEnd == False):
         currentPageIndex = lenOfPage
         time.sleep(3)
         lenOfPage = driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
+        image_list = driver.find_elements_by_tag_name('img')
+
+        for item in image_list:
+            if item not in hasSeen:
+                hasSeen.append(item)
+
         if currentPageIndex == lenOfPage:
             hasReachedEnd = True
             image_list = driver.find_elements_by_tag_name('img')
-            getImages(image_list, dir)
+            
+            for item in image_list:
+                if item not in hasSeen:
+                    hasSeen.append(item)
+
+            getImages(hasSeen, dir)
             driver.close()
 
 def main():
@@ -83,7 +102,8 @@ def main():
 
     if not queue:
         pass
-    
+
+    queue = sorted(queue)
     for n in range(0, len(queue)):
         startDriver(queue[n])
 
