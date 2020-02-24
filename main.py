@@ -83,7 +83,7 @@ def startDriver(user):
                     hasSeen.append(item)
 
             getImages(hasSeen, dir)
-            driver.close()
+            driver.quit()
 
 def main():
     dir_name = None
