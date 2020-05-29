@@ -62,7 +62,6 @@ class vscoGrab():
         print("Loading the page, this may take a moment....")
         self.loadPage()
 
-
     def loadPage(self):
         hasSeen = []
         lenOfPage = self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
