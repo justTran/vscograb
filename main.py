@@ -19,7 +19,6 @@ class vscoGrab():
         self.drive()
 
     def progress(self, block_num, block_size, total_size):
-        global pbar
         if self.pbar is None:
             self.pbar = progressbar.ProgressBar(maxval = total_size)
             self.pbar.start()
